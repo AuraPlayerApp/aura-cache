@@ -17,11 +17,15 @@ jobs:
           curl -s "https://api.themoviedb.org/3/movie/popular?api_key=${{ secrets.TMDB_API_KEY }}&language=fr-FR&page=1" > /tmp/p1.json
           curl -s "https://api.themoviedb.org/3/movie/popular?api_key=${{ secrets.TMDB_API_KEY }}&language=fr-FR&page=2" > /tmp/p2.json
           python3 -c "
-          import json
+          import json, sys
           p1 = json.load(open('/tmp/p1.json'))
           p2 = json.load(open('/tmp/p2.json'))
-          p1['results'] += p2['results']
+          if 'results' not in p1:
+              print('Erreur TMDB:', p1)
+              sys.exit(1)
+          p1['results'] += p2.get('results', [])
           json.dump(p1, open('docs/popular_movies.json','w'))
+          print('Films OK:', len(p1['results']), 'resultats')
           "
 
       - name: Fetch popular TV
@@ -29,11 +33,15 @@ jobs:
           curl -s "https://api.themoviedb.org/3/tv/popular?api_key=${{ secrets.TMDB_API_KEY }}&language=fr-FR&page=1" > /tmp/tv1.json
           curl -s "https://api.themoviedb.org/3/tv/popular?api_key=${{ secrets.TMDB_API_KEY }}&language=fr-FR&page=2" > /tmp/tv2.json
           python3 -c "
-          import json
+          import json, sys
           p1 = json.load(open('/tmp/tv1.json'))
           p2 = json.load(open('/tmp/tv2.json'))
-          p1['results'] += p2['results']
+          if 'results' not in p1:
+              print('Erreur TMDB:', p1)
+              sys.exit(1)
+          p1['results'] += p2.get('results', [])
           json.dump(p1, open('docs/popular_tv.json','w'))
+          print('Series OK:', len(p1['results']), 'resultats')
           "
 
       - name: Commit and push
