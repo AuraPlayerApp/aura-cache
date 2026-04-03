@@ -1,0 +1,45 @@
+name: Update TMDB Popular
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch popular movies
+        run: |
+          mkdir -p docs
+          curl -s "https://api.themoviedb.org/3/movie/popular?api_key=${{ secrets.TMDB_API_KEY }}&language=fr-FR&page=1" > /tmp/p1.json
+          curl -s "https://api.themoviedb.org/3/movie/popular?api_key=${{ secrets.TMDB_API_KEY }}&language=fr-FR&page=2" > /tmp/p2.json
+          python3 -c "
+          import json
+          p1 = json.load(open('/tmp/p1.json'))
+          p2 = json.load(open('/tmp/p2.json'))
+          p1['results'] += p2['results']
+          json.dump(p1, open('docs/popular_movies.json','w'))
+          "
+
+      - name: Fetch popular TV
+        run: |
+          curl -s "https://api.themoviedb.org/3/tv/popular?api_key=${{ secrets.TMDB_API_KEY }}&language=fr-FR&page=1" > /tmp/tv1.json
+          curl -s "https://api.themoviedb.org/3/tv/popular?api_key=${{ secrets.TMDB_API_KEY }}&language=fr-FR&page=2" > /tmp/tv2.json
+          python3 -c "
+          import json
+          p1 = json.load(open('/tmp/tv1.json'))
+          p2 = json.load(open('/tmp/tv2.json'))
+          p1['results'] += p2['results']
+          json.dump(p1, open('docs/popular_tv.json','w'))
+          "
+
+      - name: Commit and push
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git add docs/
+          git diff --staged --quiet || git commit -m "chore: update TMDB popular [skip ci]"
+          git push
